@@ -98,3 +98,10 @@ def user_has_admin_access(user):
         return user.userprofile.role == 'admin'
     except UserProfile.DoesNotExist:
         return False
+
+# --- Registration Utility ---
+def create_user_with_profile(user, role='standard'):
+    if role not in ['admin', 'standard']:
+        role = 'standard'
+    UserProfile.objects.create(user=user, role=role)
+    return user
