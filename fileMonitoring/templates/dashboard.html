@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+  <!-- Sidebar -->
+  <div class="col-md-3 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h5 class="card-title">Navigation</h5>
+        <ul class="nav flex-column">
+          <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">📊 Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">📁 Upload Document</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">📂 My Files</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">🗑️ Trash</a></li>
+          <li class="nav-item"><a class="nav-link" href="#">📈 Analytics</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="col-md-9">
+    <h2 class="mb-4">Dashboard</h2>
+
+    <div class="row">
+      <!-- Recent Uploads -->
+      <div class="col-md-6">
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-primary text-white">Recent Uploads</div>
+          <ul class="list-group list-group-flush">
+            {% for doc in recent_uploads %}
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ doc.name }}
+                <span class="badge bg-secondary">{{ doc.uploaded_at|date:'M d, Y' }}</span>
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">No uploads yet.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="col-md-6">
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-primary text-white">Recent Activities</div>
+          <ul class="list-group list-group-flush">
+            {% for log in recent_activities %}
+              <li class="list-group-item">
+                {{ log.action|title }} — {{ log.timestamp|date:'M d, Y H:i' }}
+              </li>
+            {% empty %}
+              <li class="list-group-item text-muted">No activity recorded.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
