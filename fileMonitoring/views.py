@@ -2,8 +2,11 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.utils import timezone
 from .models import *
 from django.contrib.auth.decorators import login_required
+import hashlib
+
 
 # --- Registration View ---
 def register_user(request):
@@ -50,6 +53,47 @@ def dashboard(request):
         'recent_uploads': recent_uploads,
         'recent_activities': recent_activities,
     })
+
+@login_required
+def upload_document(request):
+    folders = Folder.objects.all()
+
+    if request.method == 'POST':
+        name = request.POST['name']
+        file = request.FILES['file']
+        folder_id = request.POST.get('folder')
+        folder = Folder.objects.get(id=folder_id) if folder_id else None
+
+        doc = Document.objects.create(
+            name=name,
+            file=file,
+            folder=folder,
+            uploaded_by=request.user,
+            uploaded_at=timezone.now()
+        )
+
+        # SHA256 hashing
+        sha256 = hashlib.sha256()
+        for chunk in file.chunks():
+            sha256.update(chunk)
+        hash_value = sha256.hexdigest()
+
+        FileHash.objects.create(document=doc, hash_value=hash_value)
+        ActivityLog.objects.create(user=request.user, action='upload', document=doc)
+
+        return redirect('dashboard')
+
+
+    return render(request, 'documents/upload.html', {'folders': folders})
+
+
+
+
+
+
+
+
+
 
 # --- Logout View ---
 def logout_user(request):

@@ -34,7 +34,7 @@ def document_upload_path(instance, filename):
 class Document(models.Model):
     name = models.CharField(max_length=255)
     file = models.FileField(upload_to=document_upload_path)
-    folder = models.ForeignKey(Folder, on_delete=models.CASCADE)
+    folder = models.ForeignKey(Folder, on_delete=models.CASCADE, null=True, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     uploaded_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)

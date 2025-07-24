@@ -10,11 +10,11 @@
         <h5 class="card-title">Navigation</h5>
         <ul class="nav flex-column">
           <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">📊 Dashboard</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">📁 Upload Document</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'upload_document' %}">📁 Upload Document</a></li>
           <li class="nav-item"><a class="nav-link" href="#">📂 My Files</a></li>
           <li class="nav-item"><a class="nav-link" href="#">🗑️ Trash</a></li>
           <li class="nav-item"><a class="nav-link" href="#">📈 Analytics</a></li>
-        </ul>
+        </ul>        
       </div>
     </div>
   </div>
@@ -30,13 +30,16 @@
           <div class="card-header bg-primary text-white">Recent Uploads</div>
           <ul class="list-group list-group-flush">
             {% for doc in recent_uploads %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ doc.name }}
-                <span class="badge bg-secondary">{{ doc.uploaded_at|date:'M d, Y' }}</span>
-              </li>
-            {% empty %}
-              <li class="list-group-item text-muted">No uploads yet.</li>
-            {% endfor %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ doc.name }}
+              <div>
+                <a href="{{ doc.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">View</a>
+                <a href="{{ doc.file.url }}" download class="btn btn-sm btn-outline-secondary">Download</a>
+              </div>
+            </li>
+          {% empty %}
+            <li class="list-group-item text-muted">No uploads yet.</li>
+          {% endfor %}
           </ul>
         </div>
       </div>
