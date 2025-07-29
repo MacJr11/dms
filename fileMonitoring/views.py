@@ -63,6 +63,9 @@ def upload_document(request):
         file = request.FILES['file']
         folder_id = request.POST.get('folder')
         folder = Folder.objects.get(id=folder_id) if folder_id else None
+        
+        if not name:
+            name = file.name
 
         doc = Document.objects.create(
             name=name,
