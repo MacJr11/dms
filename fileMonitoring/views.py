@@ -5,6 +5,10 @@ from django.contrib import messages
 from django.utils import timezone
 from .models import *
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404, redirect
+from urllib.parse import quote
+import mimetypes
 import hashlib
 
 
@@ -89,13 +93,67 @@ def upload_document(request):
 
     return render(request, 'documents/upload.html', {'folders': folders})
 
+def smart_view(request, doc_id):
+    doc = Document.objects.get(id=doc_id)
+    file_url = request.build_absolute_uri(doc.file.url)
+    mimetype, _ = mimetypes.guess_type(doc.file.path)
 
+    if mimetype and mimetype.startswith('image'):
+        return redirect(doc.file.url)
 
+    elif mimetype == 'application/pdf':
+        return redirect(doc.file.url)
 
+    elif doc.file.name.lower().endswith(('.doc', '.docx', '.pptx', '.xlsx')):
+        encoded_url = quote(file_url, safe='')
+        office_url = f"https://view.officeapps.live.com/op/embed.aspx?src={encoded_url}"
+        return redirect(office_url)
 
+    else:
+        return redirect('dashboard.html', {
+            'message': "This file cannot be previewed in the browser."
+        })
 
+@login_required
+def my_files(request):
+    files = Document.objects.filter(uploaded_by=request.user, is_deleted=False).order_by('-uploaded_at')
+    return render(request, 'documents/my_files.html', {'files': files})
 
+@require_POST
+@login_required
+def delete_file(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user, is_deleted=False)
+    doc.is_deleted = True
+    doc.deleted_at = timezone.now()
+    doc.save()
+    messages.success(request, f"'{doc.name or doc.file.name}' has been deleted.")
+    return redirect('my_files')
 
+@login_required
+def trash(request):
+    trashed_files = Document.objects.filter(uploaded_by=request.user, is_deleted=True).order_by('-deleted_at')
+    return render(request, 'documents/trash.html', {'files': trashed_files})
+
+@require_POST
+@login_required
+def restore_file(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user, is_deleted=True)
+    doc.is_deleted = False
+    doc.deleted_at = None
+    doc.save()
+    messages.success(request, "File restored successfully.")
+    return redirect('trash')
+
+@require_POST
+@login_required
+def permanent_delete_file(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user, is_deleted=True)
+    file_path = doc.file.path
+    doc.delete()
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    messages.success(request, "File permanently deleted.")
+    return redirect('trash')
 
 
 # --- Logout View ---
