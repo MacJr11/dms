@@ -10,10 +10,13 @@
         <h5 class="card-title">Navigation</h5>
         <ul class="nav flex-column">
           <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">📊 Dashboard</a></li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'view_folders' %}">🗂️ Folders </a>
+          </li>
           <li class="nav-item"><a class="nav-link" href="{% url 'upload_document' %}">📁 Upload Document</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'my_files' %}">📂 My Files</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'trash' %}">🗑️ Trash</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">📈 Analytics</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'analytics' %}">📈 Analytics</a></li>
         </ul>        
       </div>
     </div>

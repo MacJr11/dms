@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Create Folder{% endblock %}
+
+{% block content %}
+<h4>Create New Folder</h4>
+
+{% if messages %}
+  {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+  {% endfor %}
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label for="name" class="form-label">Folder Name</label>
+    <input type="text" class="form-control catgNameInput" name="name" id="name" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="category" class="form-label ">Select Category</label>
+    <select name="category" id="category" class="form-select catgNameInput" required>
+      <option value="">-- Choose --</option>
+      {% for category in categories %}
+        <option value="{{ category.id }}">{{ category.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn btn-primary">Create Folder</button>
+</form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<h4>📁 {{ folder.name }} — Documents</h4>
+
+{% if documents %}
+  <ul class="list-group mt-3">
+    {% for doc in documents %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      {{ doc.name }}
+      <a href="{% url 'smart_preview' doc.id %}" class="btn btn-sm btn-outline-primary">View</a>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">No documents in this folder.</p>
+{% endif %}
+{% endblock %}

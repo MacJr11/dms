@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+
+{% block content %}
+<h4 class="mb-4">📈 Analytics</h4>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm border-primary">
+      <div class="card-body">
+        <h6 class="card-title text-muted">📁 Total Files Uploaded</h6>
+        <h3>{{ total_uploads }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-success">
+      <div class="card-body">
+        <h6 class="card-title text-muted">👁️ Total Views</h6>
+        <h3>{{ total_views }}</h3>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm border-info">
+      <div class="card-body">
+        <h6 class="card-title text-muted">📥 Total Downloads</h6>
+        <h3>{{ total_downloads }}</h3>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5 class="mt-4 mb-3">🔝 Top 5 Most Viewed Files</h5>
+{% if top_docs %}
+  <table class="table table-bordered table-striped">
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Views</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for doc in top_docs %}
+      <tr>
+        <td>{{ doc.document__name }}</td>
+        <td>{{ doc.view_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted">No view data available yet.</p>
+{% endif %}
+{% endblock %}

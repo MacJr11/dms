@@ -39,6 +39,8 @@
           <td>
             <a href="{% url 'smart_preview' file.id  %}" class="btn btn-sm btn-outline-primary">View</a>
             <a href="{{ file.file.url }}" class="btn btn-sm btn-outline-secondary" download>Download</a>
+            <a href="{% url 'upload_new_version' file.id %}" class="btn btn-sm btn-outline-warning">Upload Version</a>
+            <a href="{% url 'document_versions' file.id %}" class="btn btn-sm btn-outline-info">Versions</a>
             <form method="POST" action="{% url 'delete_file' file.id %}" style="display:inline;">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-sm btn-outline-danger"

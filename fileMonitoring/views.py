@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, redirect
 from urllib.parse import quote
+from django.db.models import Count
 import mimetypes
 import hashlib
 
@@ -84,6 +85,12 @@ def upload_document(request):
         for chunk in file.chunks():
             sha256.update(chunk)
         hash_value = sha256.hexdigest()
+        
+        DocumentVersion.objects.create(
+            document=doc,
+            version_file=doc.file,
+            version_number=1
+        )
 
         FileHash.objects.create(document=doc, hash_value=hash_value)
         ActivityLog.objects.create(user=request.user, action='upload', document=doc)
@@ -154,6 +161,133 @@ def permanent_delete_file(request, doc_id):
         os.remove(file_path)
     messages.success(request, "File permanently deleted.")
     return redirect('trash')
+
+@login_required
+def analytics(request):
+    user = request.user
+
+    # Total uploads
+    total_uploads = Document.objects.filter(uploaded_by=user, is_deleted=False).count()
+
+    # Total views/downloads on user's files
+    user_docs = Document.objects.filter(uploaded_by=user)
+    total_views = UsageStat.objects.filter(document__in=user_docs, action='view').count()
+    total_downloads = UsageStat.objects.filter(document__in=user_docs, action='download').count()
+
+    # Top 5 most viewed
+    top_docs = UsageStat.objects.filter(document__in=user_docs, action='view') \
+        .values('document__id', 'document__name') \
+        .annotate(view_count=Count('id')) \
+        .order_by('-view_count')[:5]
+
+    context = {
+        'total_uploads': total_uploads,
+        'total_views': total_views,
+        'total_downloads': total_downloads,
+        'top_docs': top_docs
+    }
+    return render(request, 'documents/analytics.html', context)
+
+@login_required
+def create_category(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            Category.objects.create(name=name, created_by=request.user)
+            messages.success(request, "Category created successfully.")
+            return redirect('create_category')
+        else:
+            messages.warning(request, "Name is required.")
+    return render(request, 'documents/create_category.html')
+
+@login_required
+def create_folder(request):
+    categories = Category.objects.filter(created_by=request.user)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        category_id = request.POST.get('category')
+        if name and category_id:
+            category = Category.objects.get(id=category_id)
+            Folder.objects.create(name=name, category=category)
+            messages.success(request, "Folder created successfully.")
+            return redirect('create_folder')
+        else:
+            messages.error(request, "All fields are required.")
+    return render(request, 'documents/create_folder.html', {'categories': categories})
+
+
+@login_required
+def view_categories_and_folders(request):
+    categories = Category.objects.filter(created_by=request.user).prefetch_related('folder_set')
+    return render(request, 'documents/categories_folders.html', {'categories': categories})
+
+@login_required
+def view_folder_documents(request, folder_id):
+    folder = get_object_or_404(Folder, id=folder_id)
+    documents = Document.objects.filter(folder=folder, is_deleted=False)
+    return render(request, 'documents/folder_documents.html', {'folder': folder, 'documents': documents})
+
+@login_required
+def upload_new_version(request, doc_id):
+    document = get_object_or_404(Document, id=doc_id, uploaded_by=request.user, is_deleted=False)
+
+    if request.method == 'POST':
+        new_file = request.FILES.get('version_file')
+        if new_file:
+            # increment version number
+            current_versions = DocumentVersion.objects.filter(document=document).count()
+            version_number = current_versions + 1
+
+            DocumentVersion.objects.create(
+                document=document,
+                version_file=new_file,
+                version_number=version_number
+            )
+
+            # update original document to point to new version
+            document.file = new_file
+            document.uploaded_at = timezone.now()
+            document.save()
+
+            ActivityLog.objects.create(user=request.user, action='modify', document=document)
+
+            messages.success(request, "New version uploaded.")
+            return redirect('my_files')
+
+    return render(request, 'documents/upload_version.html', {'document': document})
+
+@login_required
+def document_versions(request, doc_id):
+    document = get_object_or_404(Document, id=doc_id, uploaded_by=request.user)
+    versions = DocumentVersion.objects.filter(document=document).order_by('-version_number')
+    return render(request, 'documents/version_history.html', {'document': document, 'versions': versions})
+
+@login_required
+@require_POST
+def restore_version(request, version_id):
+    version = get_object_or_404(DocumentVersion, id=version_id)
+    document = version.document
+
+    # Create a new version entry using the restored file
+    version_number = DocumentVersion.objects.filter(document=document).count() + 1
+    DocumentVersion.objects.create(
+        document=document,
+        version_file=version.version_file,
+        version_number=version_number
+    )
+
+    # Replace current file in main document
+    document.file = version.version_file
+    document.uploaded_at = timezone.now()
+    document.save()
+
+    ActivityLog.objects.create(user=request.user, action='modify', document=document)
+
+    messages.success(request, f"Restored to version {version.version_number} (saved as version {version_number}).")
+    return redirect('document_versions', doc_id=document.id)
+
+
+
 
 
 # --- Logout View ---

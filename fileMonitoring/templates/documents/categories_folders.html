@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Folders by Category{% endblock %}
+
+{% block content %}
+<h4 class="mb-4">📂 Folders by Category</h4>
+
+<div class="btnsLinks">
+    <a class="nav-link" href="{% url 'create_category' %}" style="margin-right: 12px;"> ➕ New Category</a>
+    <a class="nav-link " href="{% url 'create_folder' %}">➕ New Folder</a>
+</div>
+
+{% if categories %}
+  {% for category in categories %}
+    <div class="card mb-3 shadow-sm folderCatlst">
+      <div class="card-header bg-light">
+        <strong>{{ category.name }}</strong>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% for folder in category.folder_set.all %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <a href="{% url 'view_folder_documents' folder.id %}" class="btn btn-sm btn-outline-primary">{{ folder.name }}</a>
+            {% if folder.is_locked %}
+              <span class="badge bg-danger">Locked</span>
+            {% endif %}
+          </li>
+        {% empty %}
+          <li class="list-group-item text-muted">No folders in this category.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+{% else %}
+  <p class="text-muted">No categories created yet.</p>
+{% endif %}
+{% endblock %}
