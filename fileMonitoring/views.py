@@ -11,6 +11,7 @@ from urllib.parse import quote
 from django.db.models import Count
 import mimetypes
 import hashlib
+from django.db.models import Q
 
 
 # --- Registration View ---
@@ -123,8 +124,17 @@ def smart_view(request, doc_id):
 
 @login_required
 def my_files(request):
-    files = Document.objects.filter(uploaded_by=request.user, is_deleted=False).order_by('-uploaded_at')
-    return render(request, 'documents/my_files.html', {'files': files})
+    query = request.GET.get('q')
+    files = Document.objects.filter(uploaded_by=request.user, is_deleted=False)
+
+    if query:
+        files = files.filter(
+            Q(name__icontains=query) |
+            Q(folder__name__icontains=query) |
+            Q(folder__category__name__icontains=query)
+        )
+
+    return render(request, 'documents/my_files.html', {'files': files, 'query': query})
 
 @require_POST
 @login_required
