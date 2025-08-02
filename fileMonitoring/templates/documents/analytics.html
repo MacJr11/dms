@@ -31,25 +31,34 @@
   </div>
 </div>
 
-<h5 class="mt-4 mb-3">🔝 Top 5 Most Viewed Files</h5>
-{% if top_docs %}
-  <table class="table table-bordered table-striped">
-    <thead>
-      <tr>
-        <th>File</th>
-        <th>Views</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for doc in top_docs %}
-      <tr>
-        <td>{{ doc.document__name }}</td>
-        <td>{{ doc.view_count }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<h5 class="mt-5 mb-3">👥 Access Log (Others Who Viewed/Downloaded Your Files)</h5>
+
+{% if access_logs %}
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>File</th>
+          <th>Action</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in access_logs %}
+        <tr>
+          <td>{{ log.accessed_by }}</td>
+          <td>{{ log.document.name }}</td>
+          <td>
+            {% if log.action == 'view' %}👁️ Viewed{% elif log.action == 'download' %}⬇️ Downloaded{% endif %}
+          </td>
+          <td>{{ log.accessed_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% else %}
-  <p class="text-muted">No view data available yet.</p>
+  <p class="text-muted">No one has accessed your shared files yet.</p>
 {% endif %}
 {% endblock %}

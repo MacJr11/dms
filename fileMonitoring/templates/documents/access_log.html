@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<h4>📜 Access Log — {{ document.name }}</h4>
+
+{% if logs %}
+  <ul class="list-group mt-3">
+    {% for log in logs %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      {{ log.action|title }} by {{ log.accessed_by }}
+      <span class="text-muted">{{ log.accessed_at|date:"M d, Y H:i" }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">No access logs yet.</p>
+{% endif %}
+{% endblock %}

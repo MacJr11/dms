@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h4>📂 Shared Documents</h4>
+
+{% if files %}
+  <ul class="list-group">
+    {% for doc in files %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      {{ doc.name }} — <small>Uploaded by {{ doc.uploaded_by }}</small>
+      <div>
+        <a href="{% url 'smart_preview' doc.id %}" class="btn btn-sm btn-outline-primary">View</a>
+        <a href="{{doc.file.url}}" class="btn btn-sm btn-outline-secondary" download>Download</a>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">No shared documents found.</p>
+{% endif %}
+{% endblock %}

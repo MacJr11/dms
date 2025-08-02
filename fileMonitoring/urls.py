@@ -23,4 +23,8 @@ urlpatterns = [
     path('document/<int:doc_id>/upload-version/', views.upload_new_version, name='upload_new_version'),
     path('document/<int:doc_id>/versions/', views.document_versions, name='document_versions'),
     path('version/<int:version_id>/restore/', views.restore_version, name='restore_version'),
+    path('document/<int:doc_id>/integrity-history/', views.integrity_history, name='integrity_history'),
+    path('shared-documents/', views.shared_documents, name='shared_documents'),
+    path('document/<int:doc_id>/access-log/', views.access_log, name='access_log'),path('document/<int:doc_id>/toggle-share/', views.toggle_share, name='toggle_share'),
+    
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

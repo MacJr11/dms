@@ -37,6 +37,7 @@ class Document(models.Model):
     folder = models.ForeignKey(Folder, on_delete=models.CASCADE, null=True, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_shared = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
 
@@ -90,6 +91,15 @@ class UsageStat(models.Model):
     accessed_by = models.ForeignKey(User, on_delete=models.CASCADE)
     action = models.CharField(max_length=20)
     accessed_at = models.DateTimeField(auto_now_add=True)
+
+class IntegrityCheckLog(models.Model):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE)
+    checked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    result = models.CharField(max_length=20, choices=[('intact', 'Intact'), ('tampered', 'Tampered')])
+    checked_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.document.name} — {self.result} at {self.checked_at}"
 
 
 # --- Admin Access Control Utility ---

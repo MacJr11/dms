@@ -12,6 +12,8 @@ from django.db.models import Count
 import mimetypes
 import hashlib
 from django.db.models import Q
+from django.utils.timezone import now
+from datetime import timedelta
 
 
 # --- Registration View ---
@@ -92,7 +94,8 @@ def upload_document(request):
             version_file=doc.file,
             version_number=1
         )
-
+        
+        hash_value = FileHash.generate_sha256(doc.file.path)
         FileHash.objects.create(document=doc, hash_value=hash_value)
         ActivityLog.objects.create(user=request.user, action='upload', document=doc)
 
@@ -106,6 +109,22 @@ def smart_view(request, doc_id):
     file_url = request.build_absolute_uri(doc.file.url)
     mimetype, _ = mimetypes.guess_type(doc.file.path)
 
+    # ✅ Log the view before redirecting
+    if request.user != doc.uploaded_by:
+        recent = UsageStat.objects.filter(
+            document=doc,
+            accessed_by=request.user,
+            action='view',
+            accessed_at__gte=now() - timedelta(minutes=10)
+        ).exists()
+        if not recent:
+            UsageStat.objects.create(
+                document=doc,
+                accessed_by=request.user,
+                action='view'
+            )
+
+    # ✅ Then process preview logic
     if mimetype and mimetype.startswith('image'):
         return redirect(doc.file.url)
 
@@ -117,11 +136,12 @@ def smart_view(request, doc_id):
         office_url = f"https://view.officeapps.live.com/op/embed.aspx?src={encoded_url}"
         return redirect(office_url)
 
-    else:
-        return redirect('dashboard.html', {
-            'message': "This file cannot be previewed in the browser."
-        })
-
+    # If nothing matches
+    return render(request, 'dashboard.html', {
+        'message': "This file cannot be previewed in the browser."
+    })
+    
+    
 @login_required
 def my_files(request):
     query = request.GET.get('q')
@@ -183,6 +203,9 @@ def analytics(request):
     user_docs = Document.objects.filter(uploaded_by=user)
     total_views = UsageStat.objects.filter(document__in=user_docs, action='view').count()
     total_downloads = UsageStat.objects.filter(document__in=user_docs, action='download').count()
+    
+    user_docs = Document.objects.filter(uploaded_by=request.user)
+    access_logs = UsageStat.objects.filter(document__in=user_docs).select_related('accessed_by', 'document').order_by('-accessed_at')
 
     # Top 5 most viewed
     top_docs = UsageStat.objects.filter(document__in=user_docs, action='view') \
@@ -194,7 +217,8 @@ def analytics(request):
         'total_uploads': total_uploads,
         'total_views': total_views,
         'total_downloads': total_downloads,
-        'top_docs': top_docs
+        'top_docs': top_docs,
+        'access_logs': access_logs
     }
     return render(request, 'documents/analytics.html', context)
 
@@ -295,6 +319,57 @@ def restore_version(request, version_id):
 
     messages.success(request, f"Restored to version {version.version_number} (saved as version {version_number}).")
     return redirect('document_versions', doc_id=document.id)
+
+@login_required
+def check_file_integrity(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user)
+    try:
+        hash_obj = FileHash.objects.get(document=doc)
+        current_hash = FileHash.generate_sha256(doc.file.path)
+
+        if current_hash == hash_obj.hash_value:
+            result = 'intact'
+            messages.success(request, "✅ File is intact.")
+        else:
+            result = 'tampered'
+            messages.warning(request, "⚠️ File has been modified or corrupted!")
+
+        # 🔐 Log the check
+        IntegrityCheckLog.objects.create(document=doc, checked_by=request.user, result=result)
+
+    except FileHash.DoesNotExist:
+        messages.warning(request, "No hash found for this file.")
+
+    return redirect('my_files')
+
+@login_required
+def shared_documents(request):
+    files = Document.objects.filter(is_shared=True, is_deleted=False).exclude(uploaded_by=request.user)
+    return render(request, 'documents/shared_docs.html', {'files': files})
+
+@login_required
+def access_log(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user)
+    logs = UsageStat.objects.filter(document=doc).order_by('-accessed_at')
+    return render(request, 'documents/access_log.html', {'document': doc, 'logs': logs})
+
+
+@login_required
+def integrity_history(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user)
+    logs = IntegrityCheckLog.objects.filter(document=doc).order_by('-checked_at')
+    return render(request, 'documents/integrity_history.html', {'document': doc, 'logs': logs})
+
+@login_required
+@require_POST
+def toggle_share(request, doc_id):
+    doc = get_object_or_404(Document, id=doc_id, uploaded_by=request.user)
+    doc.is_shared = not doc.is_shared
+    doc.save()
+
+    status = "shared" if doc.is_shared else "unshared"
+    messages.success(request, f"File is now {status}.")
+    return redirect('my_files')
 
 
 

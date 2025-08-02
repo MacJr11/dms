@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h4>🛡️ Integrity Check History — {{ document.name }}</h4>
+
+{% if logs %}
+  <ul class="list-group mt-3">
+    {% for log in logs %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      {{ log.checked_at|date:"M d, Y H:i" }} by {{ log.checked_by }}
+      {% if log.result == 'intact' %}
+        <span class="badge bg-success">✔ Intact</span>
+      {% else %}
+        <span class="badge bg-danger">⚠ Tampered</span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="text-muted">No integrity checks yet.</p>
+{% endif %}
+{% endblock %}
